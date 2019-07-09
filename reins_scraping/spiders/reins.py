@@ -303,7 +303,10 @@ class RenisSpider(scrapy.Spider):
         )
 
     def parse_list_page(self, response):
-        res = response
+
+        token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()[0]
+        random_id = response.xpath('//input[@id="randomID"]/@value').extract()[0]
+
 
     def solve_captch_process(self, session_id):
 
