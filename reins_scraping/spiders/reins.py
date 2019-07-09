@@ -64,7 +64,7 @@ class RenisSpider(scrapy.Spider):
 
         html_token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()[0]
 
-        captcha_answer = self.solve_captch_process(jsession_id)
+        captcha_answer = self.solve_captcha_process(jsession_id)
 
         if captcha_answer:
             print("captcha solved")
@@ -307,45 +307,38 @@ class RenisSpider(scrapy.Spider):
         token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()[0]
         random_id = response.xpath('//input[@id="randomID"]/@value').extract()[0]
 
-
-    def solve_captch_process(self, session_id):
-
-        if self.trying_captcha_solve_count >= 20:
-            return
-
+    def solve_captcha_process(self, session_id):
         answer = None
 
-        try:
-            self.headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8'
-            self.headers['Cookie'] = 'JSESSIONID={session_id}; currentUserid={user_id}'\
-                .format(session_id=session_id, user_id=self.user_id)
+        for i in range(20):
+            if answer:
+                return answer
 
-            print("trying to solve captcha")
+            try:
+                self.headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8'
+                self.headers['Cookie'] = 'JSESSIONID={session_id}; currentUserid={user_id}'\
+                    .format(session_id=session_id, user_id=self.user_id)
 
-            r = requests.get(self.captcha_image, headers=self.headers, allow_redirects=False)
-            with open('temp.jpg', 'wb') as f:
-                f.write(r.content)
+                print("trying to solve captcha")
 
-            files = {'file': open('temp.jpg', 'rb')}
-            data = {'key': self.api_key, 'method': 'post'}
+                r = requests.get(self.captcha_image, headers=self.headers, allow_redirects=False)
+                with open('temp.jpg', 'wb') as f:
+                    f.write(r.content)
 
-            s = requests.Session()
+                files = {'file': open('temp.jpg', 'rb')}
+                data = {'key': self.api_key, 'method': 'post'}
 
-            captcha_id = s.post(self.captcha_req_url, files=files, data=data).text.split('|')[1]
-            time.sleep(10)
+                s = requests.Session()
 
-            answer = s.get(self.captcha_res_url + '?key={}&action=get&id={}'.format(self.api_key, captcha_id)).text.split('|')[1]
-            time.sleep(10)
+                captcha_id = s.post(self.captcha_req_url, files=files, data=data).text.split('|')[1]
+                time.sleep(10)
 
-        except Exception as e:
-            print(e)
-            print("captcha can't be solved, retrying now...")
-            self.trying_captcha_solve_count += 1
-            self.solve_captch_process(session_id)
+                answer = s.get(self.captcha_res_url + '?key={}&action=get&id={}'.format(self.api_key, captcha_id)).text.split('|')[1]
+                time.sleep(10)
 
-        if answer:
-            print(answer)
-            return answer
+            except Exception as e:
+                print(e)
+                print("captcha can't be solved, retrying now...")
 
     @staticmethod
     def _clean_text(text):
