@@ -4,6 +4,7 @@ import scrapy
 import requests
 import urllib.request
 
+from lxml import html
 from urllib.parse import urljoin, urlencode
 from scrapy.http import Request, FormRequest
 
@@ -48,6 +49,10 @@ class RenisSpider(scrapy.Spider):
 
     trying_captcha_solve_count = 1
 
+    detail_page_index = 1
+
+    list_count = 0
+
     def __init__(self, *args, **kwargs):
         super(RenisSpider, self).__init__(site_name=self.allowed_domains[0], *args, **kwargs)
         self.current_page = 0
@@ -58,13 +63,18 @@ class RenisSpider(scrapy.Spider):
     def login_process(self, response):
 
         action_link = response.xpath('//form[@name="TT_UsrForm"]/@action').extract()[0]
-        jsession_id = re.search(';jsessionid(.*?)?r', action_link).group(0).replace(';jsessionid=', '').replace('?r', '')
-
-        url = urljoin(response.url, action_link.replace(jsession_id, '').replace(';jsessionid=', ''))
+        jsession_id = re.search(';jsessionid(.*?)?r', action_link)
+        if jsession_id:
+            jsession_id = jsession_id.group(0).replace(';jsessionid=', '').replace('?r', '')
+            url = urljoin(response.url, action_link.replace(jsession_id, '').replace(';jsessionid=', ''))
+            self.headers['Cookie'] = 'JSESSIONID={session_id}; currentUserid={user_id}' \
+                .format(session_id=jsession_id, user_id=self.user_id)
+        else:
+            url = urljoin(response.url, action_link)
 
         html_token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()[0]
 
-        captcha_answer = self.solve_captcha_process(jsession_id)
+        captcha_answer = self.solve_captcha_process()
 
         if captcha_answer:
             print("captcha solved")
@@ -81,7 +91,7 @@ class RenisSpider(scrapy.Spider):
             'kywrd': captcha_answer
         }
 
-        yield FormRequest(
+        return FormRequest(
             url=url,
             method='POST',
             formdata=form_data,
@@ -307,7 +317,76 @@ class RenisSpider(scrapy.Spider):
         token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()[0]
         random_id = response.xpath('//input[@id="randomID"]/@value').extract()[0]
 
-    def solve_captcha_process(self, session_id):
+        url = urljoin(response.url, response.xpath('//form[@name="Bkkn002Form"]/@action').extract()[0])
+
+        senigengamen_id = response.xpath('//input[@name="seniGenGamenID"]/@value').extract()[0]
+        sne_id = response.xpath('//input[@name="sneId"]/@value').extract()[0]
+
+        self.headers['Referer'] = response.url
+
+        form_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'randomID': random_id,
+            'contextPath': '/reins',
+            'selectedOrderItem1': '',
+            'selectedOrderItem2': '',
+            'shugu': '1',
+            'dtShri': '02',
+            'bkknId': '',
+            'shgUmKbn': '1',
+            'sneId': sne_id,
+            'listBngu': '1',
+            'printMode': 'off',
+            'sortMode': 'off',
+            'seniMotFlg': '',
+            'bkknIdList': '',
+            'seniGenGamenID': senigengamen_id,
+            'modoruBkknId': '',
+            'row1': '50',
+            'startIndex1': '0',
+            'event': 'forward_syousei',
+            'bkknBngu1': '100097346915',
+            'bkknBngu1': '100097597818',
+            'bkknBngu1': '100097696500',
+            'bkknBngu1': '100097775709',
+            'bkknBngu1': '100097971545',
+            'bkknBngu1': '100098042625',
+            'bkknBngu1': '100098406288',
+            'bkknBngu1': '100098606676',
+            'bkknBngu1': '100099183594',
+            'bkknBngu1': '100099242129',
+            'bkknBngu1': '100099332858',
+            'bkknBngu1': '100099498604',
+            'bkknBngu1': '100099513364',
+            'bkknBngu1': '100099565136',
+            'bkknBngu1': '100099572180'
+        }
+
+        table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
+        if self.detail_page_index == 1:
+            self.list_count = len(table_tr)
+        elif self.detail_page_index >= self.list_count:
+            return
+
+        bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath('//input[@name="bkknId1"]/@value')
+        if len(bkknld) > 0:
+            bkknld = bkknld[0]
+            form_data['bkknId'] = bkknld
+            return FormRequest(
+                url=url,
+                method='POST',
+                formdata=form_data,
+                callback=self.parse_detail_page,
+                headers=self.headers,
+                dont_filter=True
+            )
+
+    def parse_detail_page(self, response):
+        res = response
+        self.detail_page_index += 1
+        return Request(url=self.start_urls[0], callback=self.login_process, dont_filter=True)
+
+    def solve_captcha_process(self):
         answer = None
 
         for i in range(20):
@@ -315,9 +394,8 @@ class RenisSpider(scrapy.Spider):
                 return answer
 
             try:
+
                 self.headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8'
-                self.headers['Cookie'] = 'JSESSIONID={session_id}; currentUserid={user_id}'\
-                    .format(session_id=session_id, user_id=self.user_id)
 
                 print("trying to solve captcha")
 
