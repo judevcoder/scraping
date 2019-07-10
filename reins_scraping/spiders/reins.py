@@ -8,15 +8,6 @@ from lxml import html
 from urllib.parse import urljoin, urlencode
 from scrapy.http import Request, FormRequest
 
-#
-# class StateFarmItem(scrapy.Item):
-#     Name = scrapy.Field()
-#     Address = scrapy.Field()
-#     City = scrapy.Field()
-#     Phone_number = scrapy.Field()
-#
-
-
 class RenisSpider(scrapy.Spider):
 
     name = 'reins'
@@ -51,11 +42,15 @@ class RenisSpider(scrapy.Spider):
 
     detail_page_index = 1
 
-    list_count = 0
+    list_count_per_page = 0
+
+    total_count = 0
+
+    next_page = False
 
     def __init__(self, *args, **kwargs):
         super(RenisSpider, self).__init__(site_name=self.allowed_domains[0], *args, **kwargs)
-        self.current_page = 0
+        self.current_page = 1
 
     def start_requests(self):
         yield Request(url=self.start_urls[0], callback=self.login_process)
@@ -289,7 +284,7 @@ class RenisSpider(scrapy.Spider):
             'siykNngppGgTo': 'R',
             'siykNngppNenTo': '1',
             'siykNngppGatuTo': '7',
-            'siykNngppHiTo': '2',
+            'siykNngppHiTo': '5',
             'siykTurkKknFlg': '1',
             'siykTurkNngppGgFrom': 'R',
             'siykTurkNngppNenFrom': '',
@@ -323,6 +318,11 @@ class RenisSpider(scrapy.Spider):
         sne_id = response.xpath('//input[@name="sneId"]/@value').extract()[0]
 
         self.headers['Referer'] = response.url
+
+        if '次へ' in response.body_as_unicode():
+            self.next_page = True
+        else:
+            self.next_page = False
 
         form_data = {
             'org.apache.struts.taglib.html.TOKEN': token,
@@ -364,13 +364,98 @@ class RenisSpider(scrapy.Spider):
 
         table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
         if self.detail_page_index == 1:
-            self.list_count = len(table_tr)
-        elif self.detail_page_index >= self.list_count:
-            return
+            self.list_count_per_page = len(table_tr)
+            self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
+                                   .extract()[0].replace('売マンション(', '').replace('件)', ''))
+        elif self.detail_page_index > self.list_count_per_page:
+            if self.next_page:
 
-        bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath('//input[@name="bkknId1"]/@value')
-        if len(bkknld) > 0:
-            bkknld = bkknld[0]
+                next_page_url = response.url
+                next_page_form_data = {
+                    'org.apache.struts.taglib.html.TOKEN': token,
+                    'randomID': random_id,
+                    'contextPath': '/reins',
+                    'selectedOrderItem1': '',
+                    'selectedOrderItem2': '',
+                    'shugu': '',
+                    'dtShri': '',
+                    'bkknId': '',
+                    'shgUmKbn': '1',
+                    'sneId': sne_id,
+                    'listBngu': '',
+                    'printMode': 'off',
+                    'sortMode': 'off',
+                    'seniMotFlg': '',
+                    'bkknIdList': '',
+                    'seniGenGamenID': senigengamen_id,
+                    'modoruBkknId': '',
+                    'row1': '50',
+                    'startIndex1': str(self.current_page * 50),
+                    'event': 'forward_pageLinks',
+                    'bkknBngu1': '100091554338',
+                    'bkknBngu1': '100092135843',
+                    'bkknBngu1': '100095381738',
+                    'bkknBngu1': '100095765372',
+                    'bkknBngu1': '100095944967',
+                    'bkknBngu1': '100096112920',
+                    'bkknBngu1': '100096377623',
+                    'bkknBngu1': '100096471809',
+                    'bkknBngu1': '100097046892',
+                    'bkknBngu1': '100097068089',
+                    'bkknBngu1': '100097346915',
+                    'bkknBngu1': '100097389594',
+                    'bkknBngu1': '100097395285',
+                    'bkknBngu1': '100097440712',
+                    'bkknBngu1': '100097597818',
+                    'bkknBngu1': '100097696500',
+                    'bkknBngu1': '100097760004',
+                    'bkknBngu1': '100097775709',
+                    'bkknBngu1': '100097971545',
+                    'bkknBngu1': '100097977705',
+                    'bkknBngu1': '100098042625',
+                    'bkknBngu1': '100098112308',
+                    'bkknBngu1': '100098307211',
+                    'bkknBngu1': '100098355518',
+                    'bkknBngu1': '100098406288',
+                    'bkknBngu1': '100098451478',
+                    'bkknBngu1': '100098559286',
+                    'bkknBngu1': '100098590072',
+                    'bkknBngu1': '100098606676',
+                    'bkknBngu1': '100098659834',
+                    'bkknBngu1': '100098734439',
+                    'bkknBngu1': '100098760221',
+                    'bkknBngu1': '100098900286',
+                    'bkknBngu1': '100098971374',
+                    'bkknBngu1': '100099129902',
+                    'bkknBngu1': '100099146393',
+                    'bkknBngu1': '100099183594',
+                    'bkknBngu1': '100099190697',
+                    'bkknBngu1': '100099195510',
+                    'bkknBngu1': '100099218489',
+                    'bkknBngu1': '100099242129',
+                    'bkknBngu1': '100099289819',
+                    'bkknBngu1': '100099300864',
+                    'bkknBngu1': '100099323036',
+                    'bkknBngu1': '100099323925',
+                    'bkknBngu1': '100099332858',
+                    'bkknBngu1': '100099350991'
+                }
+                self.current_page += 1
+                self.detail_page_index = 1
+                return FormRequest(
+                    url=next_page_url,
+                    method='POST',
+                    formdata=next_page_form_data,
+                    callback=self.parse_list_page,
+                    headers=self.headers,
+                    dont_filter=True
+                )
+            else:
+                return
+
+        bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath(
+            '//input[@src="/reins/img/btn_detail.gif"]/@id')[0].replace('_', '')
+        if len(bkknld):
             form_data['bkknId'] = bkknld
             return FormRequest(
                 url=url,
@@ -382,8 +467,28 @@ class RenisSpider(scrapy.Spider):
             )
 
     def parse_detail_page(self, response):
-        res = response
+        print('Detail Index - ', self.detail_page_index)
         self.detail_page_index += 1
+        print('Next Page - ', self.next_page)
+        print('Current Page - ', self.current_page)
+        print('List Count - ', self.list_count_per_page)
+        print('Total Count - ', self.total_count)
+
+        number = response.xpath('//p[@class="shirotoMsg"]/span/text()').extract()[0].replace('物件番号：', '')
+        params = re.search('openPdfDownLoad(.*?)value', response.body_as_unicode())
+        if params:
+            params = params.group(0).replace("'", "").split(',')
+            url = params[0].replace('openPdfDownLoad(', '')
+            bkkn_id = params[1]
+            r = params[2]
+            download_link = 'https://system.reins.jp{url}?bkknId={bkkn_id}&kduFlg=1&knskFlg=1&r={r}'.format(
+                url=url,
+                bkkn_id=bkkn_id,
+                r=r
+            )
+            r = requests.get(download_link, headers=self.headers, allow_redirects=False)
+            with open('{name}.pdf'.format(name=number), 'wb') as f:
+                f.write(r.content)
         return Request(url=self.start_urls[0], callback=self.login_process, dont_filter=True)
 
     def solve_captcha_process(self):

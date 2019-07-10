@@ -7,6 +7,7 @@
 *.dia
 *.sublime-project
 *.sublime-workspace
+*.pdf
 
 # Hidden files
 !.htaccess
