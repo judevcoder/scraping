@@ -8,6 +8,7 @@
 *.sublime-project
 *.sublime-workspace
 *.pdf
+*.csv
 
 # Hidden files
 !.htaccess

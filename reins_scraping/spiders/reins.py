@@ -1,5 +1,7 @@
 import re
 import os
+import csv
+import json
 import time
 import scrapy
 import requests
@@ -52,6 +54,7 @@ class RenisSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super(RenisSpider, self).__init__(site_name=self.allowed_domains[0], *args, **kwargs)
         self.current_page = 1
+        self.result_array = []
 
     def start_requests(self):
         yield Request(url=self.start_urls[0], callback=self.login_process)
@@ -436,6 +439,11 @@ class RenisSpider(scrapy.Spider):
                 )
             else:
                 print("Crawling done. Closing spider...")
+                keys = self.result_array[0].keys()
+                with open('result.csv', 'w') as output_file:
+                    dict_writer = csv.DictWriter(output_file, keys)
+                    dict_writer.writeheader()
+                    dict_writer.writerows(self.result_array)
                 return
 
         bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath(
@@ -461,6 +469,7 @@ class RenisSpider(scrapy.Spider):
         print('Total Count - ', self.total_count)
 
         number = response.xpath('//p[@class="shirotoMsg"]/span/text()').extract()[0].replace('物件番号：', '')
+        number_key = '物件番号'
         params = re.search('openPdfDownLoad(.*?)value', response.body_as_unicode())
         if params:
             params = params.group(0).replace("'", "").split(',')
@@ -479,6 +488,21 @@ class RenisSpider(scrapy.Spider):
 
             with open('download/{name}.pdf'.format(name=number), 'wb') as f:
                 f.write(r.content)
+
+        result = {}
+
+        result[number_key] = number
+        keys = response.xpath('//td[@class="centerTd indexTableColorA tdWidthC"]/text()').extract()
+        values = response.xpath('//td[@class="leftTd valueTableColorB tdWidthL"]/text()').extract()
+        if len(keys) > 0:
+            for idx, key in enumerate(keys):
+                result[key] = self._clean_text(values[idx])
+
+        name_key = response.xpath('//td[@class="centerTd indexTableColorA tdWidthA"]/text()').extract()[0]
+        name_value = response.xpath('//td[@class="leftTd valueTableColorB tdWidthB"]/text()').extract()[0]
+        result[name_key] = name_value
+
+        self.result_array.append(result)
 
         back_link = urljoin(response.url, response.xpath('//form[@name="BkknForm"]/@action').extract()[0])
 
