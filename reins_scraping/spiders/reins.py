@@ -1,4 +1,5 @@
 import re
+import os
 import time
 import scrapy
 import requests
@@ -434,6 +435,7 @@ class RenisSpider(scrapy.Spider):
                     dont_filter=True
                 )
             else:
+                print("Crawling done. Closing spider...")
                 return
 
         bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath(
@@ -451,10 +453,11 @@ class RenisSpider(scrapy.Spider):
 
     def parse_detail_page(self, response):
         print('Detail Index - ', self.detail_page_index)
+        print('List Index - ', self.detail_page_index + (self.current_page - 1) * 50)
         self.detail_page_index += 1
         print('Next Page - ', self.next_page)
         print('Current Page - ', self.current_page)
-        print('List Count - ', self.list_count_per_page - 1)
+        print('List Count per page- ', self.list_count_per_page - 1)
         print('Total Count - ', self.total_count)
 
         number = response.xpath('//p[@class="shirotoMsg"]/span/text()').extract()[0].replace('物件番号：', '')
@@ -470,7 +473,11 @@ class RenisSpider(scrapy.Spider):
                 r=r
             )
             r = requests.get(download_link, headers=self.headers, allow_redirects=False)
-            with open('{name}.pdf'.format(name=number), 'wb') as f:
+
+            if not os.path.exists('download'):
+                os.makedirs('download')
+
+            with open('download/{name}.pdf'.format(name=number), 'wb') as f:
                 f.write(r.content)
 
         back_link = urljoin(response.url, response.xpath('//form[@name="BkknForm"]/@action').extract()[0])
