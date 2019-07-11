@@ -111,7 +111,6 @@ class RenisSpider(scrapy.Spider):
                                  '*/*;q=0.8,application/signed-exchange;v=b3'
         sale_url = None
 
-        # urls = urljoin(response.url, response.xpath('//form[@name="TT_UsrForm"]/@action').extract())
         urls = response.xpath('//form[@name="TT_UsrForm"]/@action').extract()
         for url in urls:
             if 'BK001_001.do?r' in url:
@@ -317,12 +316,9 @@ class RenisSpider(scrapy.Spider):
         senigengamen_id = response.xpath('//input[@name="seniGenGamenID"]/@value').extract()[0]
         sne_id = response.xpath('//input[@name="sneId"]/@value').extract()[0]
 
-        self.headers['Referer'] = response.url
+        bkknBngu1_list = response.xpath('//input[@name="bkknBngu1"]/@value').extract()
 
-        if response.xpath('///a[text()="次へ"]'):
-            self.next_page = True
-        else:
-            self.next_page = False
+        self.headers['Referer'] = response.url
 
         form_data = {
             'org.apache.struts.taglib.html.TOKEN': token,
@@ -345,21 +341,7 @@ class RenisSpider(scrapy.Spider):
             'row1': '50',
             'startIndex1': '0',
             'event': 'forward_syousei',
-            'bkknBngu1': '100097346915',
-            'bkknBngu1': '100097597818',
-            'bkknBngu1': '100097696500',
-            'bkknBngu1': '100097775709',
-            'bkknBngu1': '100097971545',
-            'bkknBngu1': '100098042625',
-            'bkknBngu1': '100098406288',
-            'bkknBngu1': '100098606676',
-            'bkknBngu1': '100099183594',
-            'bkknBngu1': '100099242129',
-            'bkknBngu1': '100099332858',
-            'bkknBngu1': '100099498604',
-            'bkknBngu1': '100099513364',
-            'bkknBngu1': '100099565136',
-            'bkknBngu1': '100099572180'
+            'bkknBngu1': bkknBngu1_list
         }
 
         table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
@@ -367,7 +349,10 @@ class RenisSpider(scrapy.Spider):
             self.list_count_per_page = len(table_tr)
             self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
                                    .extract()[0].replace('売マンション(', '').replace('件)', ''))
-
+            if response.xpath('///a[text()="次へ"]'):
+                self.next_page = True
+            else:
+                self.next_page = False
         if self.detail_page_index >= self.list_count_per_page:
             if self.next_page:
 
@@ -409,8 +394,6 @@ class RenisSpider(scrapy.Spider):
                 modoruBkknId = response.xpath('//input[@name="modoruBkknId"]/@value').extract()
                 modoruBkknId = modoruBkknId[0] if modoruBkknId else ''
 
-                # bkknBngu1_list =
-
                 next_page_form_data = {
                     'org.apache.struts.taglib.html.TOKEN': token,
                     'randomID': random_id,
@@ -432,53 +415,7 @@ class RenisSpider(scrapy.Spider):
                     'row1': '50',
                     'startIndex1': str(self.current_page * 50),
                     'event': 'forward_pageLinks',
-                    'bkknBngu1': '100091554338',
-                    'bkknBngu1': '100092135843',
-                    'bkknBngu1': '100095381738',
-                    'bkknBngu1': '100095765372',
-                    'bkknBngu1': '100095944967',
-                    'bkknBngu1': '100096112920',
-                    'bkknBngu1': '100096377623',
-                    'bkknBngu1': '100096471809',
-                    'bkknBngu1': '100097046892',
-                    'bkknBngu1': '100097068089',
-                    'bkknBngu1': '100097346915',
-                    'bkknBngu1': '100097389594',
-                    'bkknBngu1': '100097395285',
-                    'bkknBngu1': '100097440712',
-                    'bkknBngu1': '100097597818',
-                    'bkknBngu1': '100097696500',
-                    'bkknBngu1': '100097760004',
-                    'bkknBngu1': '100097775709',
-                    'bkknBngu1': '100097971545',
-                    'bkknBngu1': '100097977705',
-                    'bkknBngu1': '100098042625',
-                    'bkknBngu1': '100098112308',
-                    'bkknBngu1': '100098307211',
-                    'bkknBngu1': '100098355518',
-                    'bkknBngu1': '100098406288',
-                    'bkknBngu1': '100098451478',
-                    'bkknBngu1': '100098559286',
-                    'bkknBngu1': '100098590072',
-                    'bkknBngu1': '100098606676',
-                    'bkknBngu1': '100098659834',
-                    'bkknBngu1': '100098734439',
-                    'bkknBngu1': '100098760221',
-                    'bkknBngu1': '100098900286',
-                    'bkknBngu1': '100098971374',
-                    'bkknBngu1': '100099129902',
-                    'bkknBngu1': '100099146393',
-                    'bkknBngu1': '100099183594',
-                    'bkknBngu1': '100099190697',
-                    'bkknBngu1': '100099195510',
-                    'bkknBngu1': '100099218489',
-                    'bkknBngu1': '100099242129',
-                    'bkknBngu1': '100099289819',
-                    'bkknBngu1': '100099300864',
-                    'bkknBngu1': '100099323036',
-                    'bkknBngu1': '100099323925',
-                    'bkknBngu1': '100099332858',
-                    'bkknBngu1': '100099350991'
+                    'bkknBngu1': bkknBngu1_list
                 }
                 self.current_page += 1
                 self.detail_page_index = 1
