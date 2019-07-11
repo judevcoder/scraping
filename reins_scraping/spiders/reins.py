@@ -318,6 +318,12 @@ class RenisSpider(scrapy.Spider):
 
         bkknBngu1_list = response.xpath('//input[@name="bkknBngu1"]/@value').extract()
 
+        row1 = response.xpath('//input[@name="row1"]/@value').extract()
+        row1 = row1[0] if row1 else ''
+
+        start_index = response.xpath('//input[@name="startIndex1"]/@value').extract()
+        start_index = start_index[0] if start_index else ''
+
         self.headers['Referer'] = response.url
 
         form_data = {
@@ -338,8 +344,8 @@ class RenisSpider(scrapy.Spider):
             'bkknIdList': '',
             'seniGenGamenID': senigengamen_id,
             'modoruBkknId': '',
-            'row1': '50',
-            'startIndex1': '0',
+            'row1': row1,
+            'startIndex1': start_index,
             'event': 'forward_syousei',
             'bkknBngu1': bkknBngu1_list
         }
@@ -448,7 +454,7 @@ class RenisSpider(scrapy.Spider):
         self.detail_page_index += 1
         print('Next Page - ', self.next_page)
         print('Current Page - ', self.current_page)
-        print('List Count - ', self.list_count_per_page)
+        print('List Count - ', self.list_count_per_page - 1)
         print('Total Count - ', self.total_count)
 
         number = response.xpath('//p[@class="shirotoMsg"]/span/text()').extract()[0].replace('物件番号：', '')
