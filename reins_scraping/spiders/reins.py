@@ -2,11 +2,11 @@ import re
 import time
 import scrapy
 import requests
-import urllib.request
 
 from lxml import html
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin
 from scrapy.http import Request, FormRequest
+
 
 class RenisSpider(scrapy.Spider):
 
@@ -319,7 +319,7 @@ class RenisSpider(scrapy.Spider):
 
         self.headers['Referer'] = response.url
 
-        if '次へ' in response.body_as_unicode():
+        if response.xpath('///a[text()="次へ"]'):
             self.next_page = True
         else:
             self.next_page = False
@@ -362,28 +362,73 @@ class RenisSpider(scrapy.Spider):
             'bkknBngu1': '100099572180'
         }
 
-        if self.detail_page_index > self.list_count_per_page:
+        table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
+        if self.detail_page_index == 1:
+            self.list_count_per_page = len(table_tr)
+            self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
+                                   .extract()[0].replace('売マンション(', '').replace('件)', ''))
+
+        if self.detail_page_index >= self.list_count_per_page:
             if self.next_page:
 
-                next_page_url = response.url
+                next_page_url = urljoin(response.url, response.xpath('//form[@name="Bkkn002Form"]/@action').extract()[0])
+
+                selectedOrderItem1 = response.xpath('//input[@name="selectedOrderItem1"]/@value').extract()
+                selectedOrderItem1 = selectedOrderItem1[0] if selectedOrderItem1 else ''
+
+                selectedOrderItem2 = response.xpath('//input[@name="selectedOrderItem2"]/@value').extract()
+                selectedOrderItem2 = selectedOrderItem2[0] if selectedOrderItem2 else ''
+
+                shugu = response.xpath('//input[@name="shugu"]/@value').extract()
+                shugu = shugu[0] if shugu else ''
+
+                dtShri = response.xpath('//input[@name="dtShri"]/@value').extract()
+                dtShri = dtShri[0] if dtShri else ''
+
+                bkknId = response.xpath('//input[@name="bkknId"]/@value').extract()
+                bkknId = bkknId[0] if bkknId else ''
+
+                shgUmKbn = response.xpath('//input[@name="shgUmKbn"]/@value').extract()
+                shgUmKbn = shgUmKbn[0] if shgUmKbn else ''
+
+                listBngu = response.xpath('//input[@name="listBngu"]/@value').extract()
+                listBngu = listBngu[0] if listBngu else ''
+
+                printMode = response.xpath('//input[@name="printMode"]/@value').extract()
+                printMode = printMode[0] if printMode else ''
+
+                sortMode = response.xpath('//input[@name="sortMode"]/@value').extract()
+                sortMode = sortMode[0] if sortMode else ''
+
+                seniMotFlg = response.xpath('//input[@name="seniMotFlg"]/@value').extract()
+                seniMotFlg = seniMotFlg[0] if seniMotFlg else ''
+
+                bkknIdList = response.xpath('//input[@name="bkknIdList"]/@value').extract()
+                bkknIdList = bkknIdList[0] if bkknIdList else ''
+
+                modoruBkknId = response.xpath('//input[@name="modoruBkknId"]/@value').extract()
+                modoruBkknId = modoruBkknId[0] if modoruBkknId else ''
+
+                # bkknBngu1_list =
+
                 next_page_form_data = {
                     'org.apache.struts.taglib.html.TOKEN': token,
                     'randomID': random_id,
                     'contextPath': '/reins',
-                    'selectedOrderItem1': '',
-                    'selectedOrderItem2': '',
-                    'shugu': '',
-                    'dtShri': '',
-                    'bkknId': '',
-                    'shgUmKbn': '1',
+                    'selectedOrderItem1': selectedOrderItem1,
+                    'selectedOrderItem2': selectedOrderItem2,
+                    'shugu': shugu,
+                    'dtShri': dtShri,
+                    'bkknId': bkknId,
+                    'shgUmKbn': shgUmKbn,
                     'sneId': sne_id,
-                    'listBngu': '',
-                    'printMode': 'off',
-                    'sortMode': 'off',
-                    'seniMotFlg': '',
-                    'bkknIdList': '',
+                    'listBngu': listBngu,
+                    'printMode': printMode,
+                    'sortMode': sortMode,
+                    'seniMotFlg': seniMotFlg,
+                    'bkknIdList': bkknIdList,
                     'seniGenGamenID': senigengamen_id,
-                    'modoruBkknId': '',
+                    'modoruBkknId': modoruBkknId,
                     'row1': '50',
                     'startIndex1': str(self.current_page * 50),
                     'event': 'forward_pageLinks',
@@ -447,12 +492,6 @@ class RenisSpider(scrapy.Spider):
                 )
             else:
                 return
-
-        table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
-        if self.detail_page_index == 1:
-            self.list_count_per_page = len(table_tr)
-            self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
-                                   .extract()[0].replace('売マンション(', '').replace('件)', ''))
 
         bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath(
             '//input[@src="/reins/img/btn_detail.gif"]/@id')[0].replace('_', '')
