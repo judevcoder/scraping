@@ -362,12 +362,7 @@ class RenisSpider(scrapy.Spider):
             'bkknBngu1': '100099572180'
         }
 
-        table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
-        if self.detail_page_index == 1:
-            self.list_count_per_page = len(table_tr)
-            self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
-                                   .extract()[0].replace('売マンション(', '').replace('件)', ''))
-        elif self.detail_page_index > self.list_count_per_page:
+        if self.detail_page_index > self.list_count_per_page:
             if self.next_page:
 
                 next_page_url = response.url
@@ -453,6 +448,12 @@ class RenisSpider(scrapy.Spider):
             else:
                 return
 
+        table_tr = response.xpath('//table[@class="innerTable"]/tr').extract()
+        if self.detail_page_index == 1:
+            self.list_count_per_page = len(table_tr)
+            self.total_count = int(response.xpath('//a[@href="#tochi"]/text()')
+                                   .extract()[0].replace('売マンション(', '').replace('件)', ''))
+
         bkknld = html.fromstring(table_tr[self.detail_page_index]).xpath(
             '//input[@src="/reins/img/btn_detail.gif"]/@id')[0].replace('_', '')
         if len(bkknld):
@@ -489,7 +490,78 @@ class RenisSpider(scrapy.Spider):
             r = requests.get(download_link, headers=self.headers, allow_redirects=False)
             with open('{name}.pdf'.format(name=number), 'wb') as f:
                 f.write(r.content)
-        return Request(url=self.start_urls[0], callback=self.login_process, dont_filter=True)
+
+        back_link = urljoin(response.url, response.xpath('//form[@name="BkknForm"]/@action').extract()[0])
+
+        token = response.xpath('//input[@name="org.apache.struts.taglib.html.TOKEN"]/@value').extract()
+        token = token[0] if token else ''
+
+        random_id = response.xpath('//input[@name="randomID"]/@value').extract()
+        random_id = random_id[0] if random_id else ''
+
+        dtshri = response.xpath('//input[@name="dtShri"]/@value').extract()
+        dtshri = dtshri[0] if dtshri else ''
+
+        qbkkn_id = response.xpath('//input[@name="qbkknId"]/@value').extract()
+        qbkkn_id = qbkkn_id[0] if qbkkn_id else ''
+
+        hbkkn_id = response.xpath('//input[@name="hbkknId"]/@value').extract()
+        hbkkn_id = hbkkn_id[0] if hbkkn_id else ''
+
+        fomr_data_bkkn_id = response.xpath('//input[@name="bkknId"]/@value').extract()
+        fomr_data_bkkn_id = fomr_data_bkkn_id[0] if fomr_data_bkkn_id else ''
+
+        shugu = response.xpath('//input[@name="shugu"]/@value').extract()
+        shugu = shugu[0] if shugu else ''
+
+        btnxkx = response.xpath('//input[@name="btnxkx"]/@value').extract()
+        btnxkx = btnxkx[0] if btnxkx else ''
+
+        print_mode = response.xpath('//input[@name="printMode"]/@value').extract()
+        print_mode = print_mode[0] if print_mode else ''
+
+        knskflg = response.xpath('//input[@name="knskFlg"]/@value').extract()
+        knskflg = knskflg[0] if knskflg else ''
+
+        zmnflmi = response.xpath('//input[@name="zmnFlmi"]/@value').extract()
+        zmnflmi = zmnflmi[0] if zmnflmi else ''
+
+        sne_id = response.xpath('//input[@name="sneId"]/@value').extract()
+        sne_id = sne_id[0] if sne_id else ''
+
+        seni_gen_gamen_id = response.xpath('//input[@name="seniGenGamenID"]/@value').extract()
+        seni_gen_gamen_id = seni_gen_gamen_id[0] if seni_gen_gamen_id else ''
+
+        modorubkkn_id = response.xpath('//input[@name="modoruBkknId"]/@value').extract()
+        modorubkkn_id = modorubkkn_id[0] if modorubkkn_id else ''
+
+        form_data = {
+            'org.apache.struts.taglib.html.TOKEN': token,
+            'randomID': random_id,
+            'contextPath': '/reins',
+            'dtShri': dtshri,
+            'qbkknId': qbkkn_id,
+            'hbkknId': hbkkn_id,
+            'bkknId': fomr_data_bkkn_id,
+            'shugu': shugu,
+            'btnxkx': btnxkx,
+            'printMode': print_mode,
+            'event': 'forward_search',
+            'knskFlg': knskflg,
+            'zmnFlmi': zmnflmi,
+            'sneId': sne_id,
+            'seniGenGamenID': seni_gen_gamen_id,
+            'modoruBkknId': modorubkkn_id
+        }
+
+        return FormRequest(
+            url=back_link,
+            method='POST',
+            formdata=form_data,
+            callback=self.parse_list_page,
+            headers=self.headers,
+            dont_filter=True
+        )
 
     def solve_captcha_process(self):
         answer = None
