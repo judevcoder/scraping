@@ -566,10 +566,10 @@ class RenisSpider(scrapy.Spider):
                 print("trying to solve captcha")
 
                 r = requests.get(self.captcha_image, headers=self.headers, allow_redirects=False)
-                with open('temp.jpg', 'wb') as f:
+                with open('captcha.jpg', 'wb') as f:
                     f.write(r.content)
 
-                files = {'file': open('temp.jpg', 'rb')}
+                files = {'file': open('captcha.jpg', 'rb')}
                 data = {'key': self.api_key, 'method': 'post'}
 
                 s = requests.Session()
