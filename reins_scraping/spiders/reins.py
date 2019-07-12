@@ -492,15 +492,16 @@ class RenisSpider(scrapy.Spider):
         result = {}
 
         result[number_key] = number
-        keys = response.xpath('//td[@class="centerTd indexTableColorA tdWidthC"]/text()').extract()
-        values = response.xpath('//td[@class="leftTd valueTableColorB tdWidthL"]/text()').extract()
-        if len(keys) > 0:
-            for idx, key in enumerate(keys):
-                result[key] = self._clean_text(values[idx])
 
-        name_key = response.xpath('//td[@class="centerTd indexTableColorA tdWidthA"]/text()').extract()[0]
-        name_value = response.xpath('//td[@class="leftTd valueTableColorB tdWidthB"]/text()').extract()[0]
-        result[name_key] = name_value
+        result_keys = response.xpath('//td[contains(@class, "centerTd indexTableColorA")]').extract()
+        result_values = response.xpath('//td[contains(@class, "leftTd valueTableColorB")]').extract()
+
+        for idx, result_key in enumerate(result_keys):
+            key = html.fromstring(result_key).xpath('//td/text()')
+            key = self._clean_text(key[0]) if key else ''
+            value = html.fromstring(result_values[idx]).xpath('//td/text()')
+            value = self._clean_text(value[0]) if value else ''
+            result[key] = value
 
         self.result_array.append(result)
 
