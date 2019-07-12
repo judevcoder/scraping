@@ -19,11 +19,11 @@ class RenisSpider(scrapy.Spider):
 
     start_urls = ['https://system.reins.jp/reins/ktgyoumu/KG001_001.do']
 
-    user_id = '302336607294'
+    user_id = 'user_id'
 
-    password = 'marube'
+    password = 'password'
 
-    api_key = 'c81d01b13adbec52d5213925cad16baa'
+    api_key = 'api_key'
 
     captcha_req_url = 'http://2captcha.com/in.php'
 
