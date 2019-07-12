@@ -13,11 +13,11 @@ from scrapy.http import Request, FormRequest
 
 class RenisSpider(scrapy.Spider):
 
-    name = 'reins'
+    name = 'name'
 
-    allowed_domains = ["system.reins.jp"]
+    allowed_domains = ["example.com"]
 
-    start_urls = ['https://system.reins.jp/reins/ktgyoumu/KG001_001.do']
+    start_urls = ['example.com']
 
     user_id = 'user_id'
 
@@ -29,7 +29,7 @@ class RenisSpider(scrapy.Spider):
 
     captcha_res_url = 'http://2captcha.com/res.php'
 
-    captcha_image = 'https://system.reins.jp/reins/ktgyoumu/KG001_001JcaptchaAction.do'
+    captcha_image = 'example.com/captcha.jpb'
 
     headers = {
         'Accept': '',
